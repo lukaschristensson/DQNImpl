@@ -1,34 +1,58 @@
 import gym
 import matplotlib.pyplot as plt
 import tqdm
-from DQN import *
+import socket
+import json
 
-time_before = time.time()
+
 env = gym.make('CartPole-v1', render_mode="human")
 state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.n
-dqn = DQN(state_dim, action_dim, epsilon_0=.9, opt='Adam')
 tot_rewards = []
 num_episodes = 100
+
+ser = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+ser.connect(('localhost', 100))
+create_DQN_json = {
+    "fun": "new_agent",
+    "name": "test",
+    "state_dim": state_dim,
+    "action_dim": action_dim
+}
+ser.send(json.dumps(create_DQN_json).encode())
 
 for e in tqdm.tqdm(range(num_episodes)):
     state = env.reset()[0]
     total_reward = 0
     done = False
     while not done:
-        action = dqn.action(state)
+        # send state, receive action
+        get_action_json = {
+            "fun": "get_action",
+            "name": "test",
+            "state": state.tolist()
+        }
+        ser.send(json.dumps(get_action_json).encode())
+        action = int(ser.recv(1024).decode())
+
+        # play action
         next_state, reward, done, *_ = env.step(action)
-        dqn.store_in_replay(state, action, reward, next_state, done)
+
+        # update replay
+        update_replay_json = {
+            "fun": "store_in_replay",
+            "name": "test",
+            "state": state.tolist(),
+            "action": action,
+            "reward": reward,
+            "next_state": next_state.tolist(),
+            "done": done
+        }
+        ser.send(json.dumps(update_replay_json).encode())
         state = next_state
         total_reward += reward
-        dqn.replay()
     tot_rewards.append(total_reward)
-time_taken = time.time() - time_before
 
-print('idx time:\t', 100*IDX_TIME/time_taken, '%')
-print('train time:\t', 100*TRAINING_TIME/time_taken,'%')
-print('copy time:\t', 100*COPY_TIME/time_taken, '%')
-figs, (ax1, ax2) = plt.subplots(2,1)
-ax1.plot(losses)
-ax2.plot(tot_rewards)
+plt.plot(tot_rewards)
+plt.legend()
 plt.show()
