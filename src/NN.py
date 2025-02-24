@@ -72,7 +72,7 @@ class FCNN:
         if x.shape[1] != self.ls[0]:
             raise Exception(f'Wrong X dimension: x_dim = {x.shape[1]}, input_dim = {self.ls[0]}')
         if y is not None and y.shape[1] != self.ls[-1]:
-            raise Exception(f'Wrong X dimension: y_dim = {len(y)}, output_dim = {self.ls[-1]}')
+            raise Exception(f'Wrong Y dimension: y_dim = {len(y)}, output_dim = {self.ls[-1]}')
 
         act = activation_functions[self.act_fun]
         acts = [x]

@@ -1,6 +1,7 @@
 import numpy as np
 import NN
 import copy
+import json
 
 
 class DQN:
@@ -14,7 +15,7 @@ class DQN:
         self.replay_memory = []
 
         if layers is None:
-            layers = [state_dim, 50, action_dim]
+            layers = [state_dim, 256, 256, action_dim]
         self.q_network = NN.FCNN(layers, **kwargs)
         self.target_network = copy.copy(self.q_network)
 
@@ -23,10 +24,17 @@ class DQN:
             return np.random.rand(self.action_dim)
         return self.q_network.forward(np.asarray(state)).ravel() # only supports one dimensional outputs
 
-    def store_in_replay(self, state, action, reward, next_sate, done):
-        self.replay_memory.append((state, action, reward, next_sate, done))
+    def store_in_replay(self, state, action, reward, next_state, done):
+        self.replay_memory.append((state, action, reward, next_state, done))
         if len(self.replay_memory) > 4096:
             self.replay_memory = self.replay_memory[2048:]
+
+    def load_replays(self, file_name):
+        with open(file_name, 'r') as f:
+            for l in f.readlines():
+                if not l: continue
+                self.store_in_replay(**json.loads(l))
+                self.replay()
 
     def replay(self, batch_size=32):
         if len(self.replay_memory) < batch_size:

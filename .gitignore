@@ -1,3 +1,4 @@
 pythonInterpreter
 .idea
 src/__pycache__
+src/*.replay

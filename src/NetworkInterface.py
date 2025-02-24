@@ -2,6 +2,7 @@ import socket
 import threading
 import DQN
 import json
+import os
 
 
 def argmax(lst, filtr=None):
@@ -45,6 +46,9 @@ class NetworkInterface:
                     require(jsn, 'name', 'state_dim', 'action_dim')
 
                     self.DQNs[jsn['name']] = DQN.DQN(jsn['state_dim'], jsn['action_dim'])
+                    if os.path.exists(jsn['name']+'.replay'):
+                        self.DQNs[jsn['name']].load_replays(jsn['name']+'.replay')
+
                 elif jsn['fun'] == 'get_action':
                     require(jsn, 'name', 'state')
 
@@ -55,6 +59,7 @@ class NetworkInterface:
                     conn.send(s.encode())
                 elif jsn['fun'] == 'store_in_replay':
                     require(jsn, 'name', 'state', 'action', 'reward', 'next_state', 'done')
+                    assert(type(jsn['name']) == str)
 
                     self.DQNs[jsn['name']].store_in_replay(
                         jsn['state'],
@@ -63,6 +68,17 @@ class NetworkInterface:
                         jsn['next_state'],
                         jsn['done']
                     )
+
+                    # add replay to replay file
+                    save_jsn = {}
+                    save_jsn['state'] = jsn['state']
+                    save_jsn['action'] = jsn['action']
+                    save_jsn['reward'] = jsn['reward']
+                    save_jsn['next_state'] = jsn['next_state']
+                    save_jsn['done'] = jsn['done']
+
+                    with open(jsn['name']+'.replay', 'a') as f:
+                        f.write(json.dumps(save_jsn)+'\n')
                     self.DQNs[jsn['name']].replay()
         except Exception as e:
             conn.close()
