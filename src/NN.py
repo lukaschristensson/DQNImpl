@@ -69,8 +69,6 @@ class FCNN:
             x = x.reshape(1, -1)
         if y is not None and y.ndim == 1:
             y = y.reshape(-1, 1)
-        print(x.shape)
-        print(self.ls)
         if x.shape[1] != self.ls[0]:
             raise Exception(f'Wrong X dimension: x_dim = {x.shape[1]}, input_dim = {self.ls[0]}')
         if y is not None and y.shape[1] != self.ls[-1]:
